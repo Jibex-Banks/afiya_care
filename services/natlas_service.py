@@ -1,4 +1,4 @@
-from transformers import AutoTokenizer, AutoModelForCausalLM
+from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
 import torch
 from typing import List, Optional, Dict
 from core.config import settings
@@ -36,12 +36,20 @@ class NATLaSService:
                 token=settings.HF_TOKEN,
             )
             
+            quantization_config = BitsAndBytesConfig(
+                load_in_4bit=True,
+                bnb_4bit_compute_dtype=torch.float16,
+                bnb_4bit_quant_type="nf4",
+            )
+
             # Load model
             self.model = AutoModelForCausalLM.from_pretrained(
                 settings.NATLAS_MODEL,
+                quantization_config=quantization_config,
                 torch_dtype=torch.float16 if self.device == "cuda" else torch.float32,
                 device_map="auto" if self.device == "cuda" else None,
-                trust_remote_code=True
+                trust_remote_code=True,
+                low_cpu_mem_usage=True
             )
             
             if self.device == "cpu":
