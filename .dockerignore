@@ -1,0 +1,45 @@
+# Python caches & venvs
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.env
+.venv/
+venv/
+avenv/
+
+# Tests & coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Git
+.git/
+.gitignore
+
+# Node
+node_modules/
+
+# AI / large assets
+models/
+datasets/
+*.bin
+*.pt
+*.onnx
+*.ckpt
+
+# Logs
+*.log
+
+# IDE / OS
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*.swo

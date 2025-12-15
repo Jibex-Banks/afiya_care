@@ -1,0 +1,74 @@
+# =========================
+# Environment variables
+# =========================
+.env
+.env.*
+!.env.example
+
+# =========================
+# Python
+# =========================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.log
+
+# =========================
+# Virtual environments
+# =========================
+venv/
+env/
+avenv/
+.venv/
+
+# =========================
+# OS files
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# Editor / IDE
+# =========================
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# =========================
+# Docker
+# =========================
+docker-compose.override.yml
+
+# =========================
+# Database / Local state
+# =========================
+*.sqlite3
+*.db
+
+# =========================
+# Models & caches (IMPORTANT for HF)
+# =========================
+models/
+.cache/
+hf_cache/
+transformers_cache/
+
+# =========================
+# Alembic
+# =========================
+alembic/versions/*.pyc
+
+# =========================
+# Logs
+# =========================
+logs/
+*.log
+
+# =========================
+# Test / Temp files
+# =========================
+.tmp/
+.temp/
+*.bak

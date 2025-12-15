@@ -1,0 +1,91 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: afiya_postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-afiya_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-afiya_pass}
+      POSTGRES_DB: ${POSTGRES_DB:-afiya_care}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U afiya_user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - afiya_network
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: afiya_qdrant
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    environment:
+      - QDRANT__SERVICE__GRPC_PORT=6334
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6333/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - afiya_network
+
+  redis:
+    image: redis:7-alpine
+    container_name: afiya_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - afiya_network
+
+  backend:
+    build: .
+    container_name: afiya_backend
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://afiya_user:afiya_pass@postgres:5432/afiya_care
+      - QDRANT_HOST=qdrant
+      - QDRANT_PORT=6333
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=${SECRET_KEY:-change-this-in-production}
+      - NATLAS_MODEL=NCAIR1/N-ATLaS
+      - ENV=production
+      - DEBUG=False
+    depends_on:
+      postgres:
+        condition: service_healthy
+      qdrant:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./models:/app/models
+    networks:
+      - afiya_network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  qdrant_data:
+  redis_data:
+
+networks:
+  afiya_network:
+    driver: bridge
