@@ -5,7 +5,7 @@ fastapi==0.104.1
 grpcio==1.50.0
 grpcio-tools==1.50.0
 uvicorn[standard]==0.24.0
-protobuf
+protobuf>=4.21.6,<5.0
 python-dotenv==1.0.0
 pydantic==2.5.0
 pydantic-settings==2.1.0
@@ -25,12 +25,11 @@ transformers==4.35.0
 torch==2.1.0
 accelerate==0.25.0
 
-# 🆕 4-bit Quantization (CRITICAL - This fixes memory issue)
+# 🆕 4-bit Quantization
 bitsandbytes==0.41.3
 
 # Model dependencies
 sentencepiece==0.1.99
-protobuf==3.20.3
 
 # Embeddings (lightweight)
 sentence-transformers==2.2.2
