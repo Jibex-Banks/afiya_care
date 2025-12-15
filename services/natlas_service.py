@@ -1,13 +1,12 @@
 from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
 import torch
-from typing import List, Optional, Dict
+from typing import Dict, Optional
 from core.config import settings
-
 
 class NATLaSService:
     """
-    N-ATLaS Language Model Service
-    Nigerian Atlas for Languages & AI at Scale
+    N-ATLaS Language Model Service with 4-bit Quantization
+    Reduces memory usage from 16GB to ~4GB
     """
     
     def __init__(self):
@@ -15,7 +14,7 @@ class NATLaSService:
         self.tokenizer = None
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.supported_languages = {
-            'en': 'English (Nigerian accent)',
+            'en': 'English',
             'yo': 'Yoruba',
             'ha': 'Hausa',
             'ig': 'Igbo',
@@ -23,212 +22,139 @@ class NATLaSService:
         }
         
     async def initialize(self):
-        """Load N-ATLaS model and tokenizer"""
-        print(f"🇳🇬 Loading N-ATLaS model: {settings.NATLAS_MODEL}")
-        print(f"🔧 Using device: {self.device}")
+        """Load N-ATLaS model with 4-bit quantization"""
+        print(f"🇳🇬 Loading N-ATLaS with 4-bit quantization: {settings.NATLAS_MODEL}")
+        print(f"🔧 Device: {self.device}")
+        print(f"💾 Using 4-bit quantization to reduce memory usage")
         
         try:
             # Load tokenizer
+            print("📝 Loading tokenizer...")
             self.tokenizer = AutoTokenizer.from_pretrained(
                 settings.NATLAS_MODEL,
-                trust_remote_code=True,
-                use_fast=False, 
-                token=settings.HF_TOKEN,
+                trust_remote_code=True
+            )
+            print("✅ Tokenizer loaded")
+            
+            # Configure 4-bit quantization
+            print("⚙️ Configuring 4-bit quantization...")
+            quantization_config = BitsAndBytesConfig(
+                load_in_4bit=True,                          # Enable 4-bit loading
+                bnb_4bit_compute_dtype=torch.float16,       # Compute in float16
+                bnb_4bit_quant_type="nf4",                  # Normal Float 4-bit
+                bnb_4bit_use_double_quant=True,             # Double quantization
             )
             
-            quantization_config = BitsAndBytesConfig(
-                load_in_4bit=True,
-                bnb_4bit_compute_dtype=torch.float16,
-                bnb_4bit_quant_type="nf4",
-            )
-
-            # Load model
+            # Load model with quantization
+            print("🤖 Loading N-ATLaS model (this may take 2-3 minutes)...")
             self.model = AutoModelForCausalLM.from_pretrained(
                 settings.NATLAS_MODEL,
                 quantization_config=quantization_config,
-                torch_dtype=torch.float16 if self.device == "cuda" else torch.float32,
-                device_map="auto" if self.device == "cuda" else None,
+                device_map="auto",                           # Auto device placement
                 trust_remote_code=True,
-                low_cpu_mem_usage=True
+                low_cpu_mem_usage=True,                      # Optimize CPU memory
+                torch_dtype=torch.float16                    # Use float16
             )
             
-            if self.device == "cpu":
-                self.model = self.model.to(self.device)
-            
-            print("✅ N-ATLaS model loaded successfully")
-            print(f"📊 Model size: ~8B parameters (Llama-3 based)")
+            print("✅ N-ATLaS model loaded successfully!")
+            print(f"💾 Memory usage: ~4-5GB (vs ~16GB unquantized)")
             print(f"🌍 Languages: {', '.join(self.supported_languages.values())}")
             
         except Exception as e:
             print(f"❌ Error loading N-ATLaS: {e}")
+            print(f"💡 Tip: Make sure bitsandbytes is installed: pip install bitsandbytes")
             raise RuntimeError(f"Failed to load N-ATLaS model: {e}")
     
-    async def generate_response(
-        self,
-        prompt: str,
-        language: Optional[str] = "en",
-        max_length: int = None,
-        temperature: float = None,
-        top_p: float = None
-    ) -> str:
+    async def analyze_symptoms(self, symptoms: str, language: str = "en") -> str:
         """
-        Generate response using N-ATLaS
+        Analyze symptoms using quantized N-ATLaS
         
         Args:
-            prompt: Input prompt/question
+            symptoms: Patient symptom description
             language: Language code (en, yo, ha, ig, pcm)
-            max_length: Maximum response length
-            temperature: Sampling temperature
-            top_p: Nucleus sampling parameter
         """
         if self.model is None or self.tokenizer is None:
             raise RuntimeError("N-ATLaS service not initialized")
         
-        # Set defaults
-        max_length = max_length or settings.NATLAS_MAX_LENGTH
-        temperature = temperature or settings.NATLAS_TEMPERATURE
-        top_p = top_p or settings.NATLAS_TOP_P
-        
-        # Format prompt for N-ATLaS
-        formatted_prompt = self._format_prompt(prompt, language)
-        
-        # Tokenize
-        inputs = self.tokenizer(
-            formatted_prompt,
-            return_tensors="pt",
-            truncation=True,
-            max_length=max_length
-        ).to(self.device)
-        
-        # Generate
-        with torch.no_grad():
-            outputs = self.model.generate(
-                **inputs,
-                max_length=max_length,
-                temperature=temperature,
-                top_p=top_p,
-                do_sample=True,
-                pad_token_id=self.tokenizer.eos_token_id
-            )
-        
-        # Decode
-        response = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
-        
-        # Remove the prompt from response
-        response = response.replace(formatted_prompt, "").strip()
-        
-        return response
-    
-    def _format_prompt(self, prompt: str, language: str) -> str:
-        """
-        Format prompt for N-ATLaS based on language
-        """
-        lang_prefixes = {
-            'en': '',  # Default
-            'yo': '[Yoruba] ',
-            'ha': '[Hausa] ',
-            'ig': '[Igbo] ',
-            'pcm': '[Pidgin] '
-        }
-        
-        prefix = lang_prefixes.get(language, '')
-        return f"{prefix}{prompt}"
-    
-    async def analyze_symptoms_natlas(
-        self,
-        symptoms: str,
-        language: str = "en"
-    ) -> Dict:
-        """
-        Use N-ATLaS to analyze symptoms in local languages
-        
-        Args:
-            symptoms: Patient symptom description
-            language: Language of the symptoms
-        """
         # Create medical analysis prompt
-        prompt = f"""As a medical assistant, analyze these symptoms and provide:
-1. Possible conditions
-2. Severity level
-3. Recommendations
+        prompt = f"""As a medical assistant, analyze these symptoms briefly:
 
 Symptoms: {symptoms}
 
-Provide a clear, helpful response."""
+Provide a concise analysis with possible conditions and recommendations."""
         
-        # Generate response
-        response = await self.generate_response(
-            prompt=prompt,
-            language=language,
-            max_length=1024,
-            temperature=0.7
-        )
+        # Tokenize with reduced context (saves memory)
+        inputs = self.tokenizer(
+            prompt,
+            return_tensors="pt",
+            truncation=True,
+            max_length=512  # Reduced from 2048 to save memory
+        ).to(self.device)
         
-        return {
-            "analysis": response,
-            "language": language,
-            "model": "N-ATLaS"
-        }
-    
-    async def translate_medical_info(
-        self,
-        text: str,
-        target_language: str
-    ) -> str:
-        """
-        Translate medical information to local language
+        # Generate response with reduced length
+        with torch.no_grad():
+            outputs = self.model.generate(
+                **inputs,
+                max_new_tokens=256,      # Reduced from 512
+                temperature=0.7,
+                top_p=0.9,
+                do_sample=True,
+                pad_token_id=self.tokenizer.eos_token_id,
+                eos_token_id=self.tokenizer.eos_token_id
+            )
         
-        Args:
-            text: Text to translate
-            target_language: Target language code
-        """
-        prompt = f"Translate the following medical information to {self.supported_languages.get(target_language, 'English')}:\n\n{text}"
+        # Decode response
+        response = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
         
-        translation = await self.generate_response(
-            prompt=prompt,
-            language=target_language,
-            max_length=512
-        )
+        # Remove prompt from response
+        response = response.replace(prompt, "").strip()
         
-        return translation
-    
-    def get_model_info(self) -> Dict:
-        """Get N-ATLaS model information"""
-        return {
-            "model_name": settings.NATLAS_MODEL,
-            "architecture": "Llama-3 8B (Fine-tuned)",
-            "device": self.device,
-            "supported_languages": self.supported_languages,
-            "developer": "Awarri Technologies + FMCIDE Nigeria",
-            "training_tokens": "391M+ multilingual tokens",
-            "release": "September 2025"
-        }
+        return response
     
     def detect_language(self, text: str) -> str:
         """
-        Detect language from text (basic implementation)
+        Detect language from text using pattern matching
+        
+        Args:
+            text: Input text
+            
+        Returns:
+            Language code (en, yo, ha, ig, pcm)
         """
         text_lower = text.lower()
         
-        # Yoruba markers
-        yoruba_markers = ['ẹ', 'ọ', 'ṣ', 'bawo', 'e se', 'omo']
+        # Yoruba markers (special characters and common words)
+        yoruba_markers = ['ẹ', 'ọ', 'ṣ', 'bawo', 'se', 'ni', 'mo', 'ti']
         if any(marker in text_lower for marker in yoruba_markers):
             return 'yo'
         
         # Hausa markers
-        hausa_markers = ['sannu', 'yaya', 'ina', 'ƙ', 'ɗ']
+        hausa_markers = ['sannu', 'yaya', 'ina', 'da', 'ciwon', 'kai']
         if any(marker in text_lower for marker in hausa_markers):
             return 'ha'
         
         # Igbo markers
-        igbo_markers = ['kedu', 'ndewo', 'ị', 'ụ']
+        igbo_markers = ['kedu', 'ndewo', 'enwere', 'nwere']
         if any(marker in text_lower for marker in igbo_markers):
             return 'ig'
         
-        # Pidgin markers
-        pidgin_markers = ['wetin', 'dey', 'no', 'go', 'fit']
+        # Pidgin markers (need at least 2 for confidence)
+        pidgin_markers = ['wetin', 'dey', 'fit', 'no', 'go', 'make', 'dem']
         pidgin_count = sum(1 for marker in pidgin_markers if marker in text_lower.split())
         if pidgin_count >= 2:
             return 'pcm'
         
-        return 'en'  # Default to English
+        # Default to English
+        return 'en'
+    
+    def get_model_info(self) -> Dict:
+        """Get model information"""
+        return {
+            "model_name": settings.NATLAS_MODEL,
+            "architecture": "Llama-3 8B (4-bit quantized)",
+            "device": self.device,
+            "quantization": "4-bit NF4",
+            "memory_usage": "~4-5GB",
+            "supported_languages": self.supported_languages,
+            "developer": "Awarri Technologies + FMCIDE Nigeria"
+        }

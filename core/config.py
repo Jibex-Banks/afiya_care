@@ -31,10 +31,14 @@ class Settings(BaseSettings):
     
     # N-ATLaS Configuration
     NATLAS_MODEL: str = "NCAIR1/N-ATLaS"
-    NATLAS_MAX_LENGTH: int = 2048
+    NATLAS_MAX_LENGTH: int = 512        # Reduced from 2048
+    NATLAS_MAX_NEW_TOKENS: int = 256    # Reduced from 512
     NATLAS_TEMPERATURE: float = 0.7
     NATLAS_TOP_P: float = 0.9
-    HF_TOKEN: str
+    
+    # 🆕 Quantization settings
+    NATLAS_USE_4BIT: bool = True        # Enable 4-bit quantization
+    NATLAS_COMPUTE_DTYPE: str = "float16"
     
     # Embedding Model
     EMBEDDING_MODEL: str = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
