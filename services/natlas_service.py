@@ -52,13 +52,6 @@ class NATLaSService:
                 token=token
             )
 
-            # Patch rope_scaling for LLaMA3 compatibility
-            if hasattr(config, "rope_scaling") and isinstance(config.rope_scaling, dict):
-                config.rope_scaling = {
-                    "type": config.rope_scaling.get("type", "dynamic"),
-                    "factor": config.rope_scaling.get("factor", 8.0)
-                }
-
             print(f"✅ Config loaded: {config.model_type}")
 
             # 4-bit quantization config
