@@ -29,11 +29,13 @@ class NATLaSService:
         print(f"🔧 Device: {self.device}")
         
         try:
+            token = settings.HUGGINGFACE_HUB_TOKEN
             # Load tokenizer first
             print("📝 Loading tokenizer...")
             self.tokenizer = AutoTokenizer.from_pretrained(
                 settings.NATLAS_MODEL,
                 trust_remote_code=True,
+                use_auth_token=token
                 use_fast=False  # Use slow tokenizer for compatibility
             )
             
@@ -47,7 +49,8 @@ class NATLaSService:
             print("⚙️ Loading model config...")
             config = AutoConfig.from_pretrained(
                 settings.NATLAS_MODEL,
-                trust_remote_code=True
+                trust_remote_code=True,
+                use_auth_token=token
             )
             print(f"✅ Config loaded: {config.model_type}")
             
@@ -64,6 +67,7 @@ class NATLaSService:
             print("🤖 Loading N-ATLaS model...")
             self.model = AutoModelForCausalLM.from_pretrained(
                 settings.NATLAS_MODEL,
+                use_auth_token=token,
                 config=config,  # Use pre-loaded config
                 quantization_config=quantization_config,
                 device_map="auto",
@@ -90,6 +94,7 @@ class NATLaSService:
             
             self.model = AutoModelForCausalLM.from_pretrained(
                 settings.NATLAS_MODEL,
+                use_auth_token=token,
                 device_map="auto",
                 trust_remote_code=True,
                 low_cpu_mem_usage=True,
