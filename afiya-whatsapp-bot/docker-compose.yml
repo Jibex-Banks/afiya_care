@@ -1,0 +1,85 @@
+version: '3.8'
+
+services:
+  # FastAPI Backend (Python + N-ATLaS)
+  backend:
+    build: ../afiya-care-backend
+    container_name: afiya_backend
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://afiya_user:afiya_pass@postgres:5432/afiya_care
+      - QDRANT_HOST=qdrant
+      - REDIS_URL=redis://redis:6379/0
+      - NATLAS_MODEL=NCAIR1/N-ATLaS
+    depends_on:
+      - postgres
+      - qdrant
+      - redis
+    networks:
+      - afiya_network
+    restart: unless-stopped
+
+  # WhatsApp Bot (Node.js)
+  whatsapp_bot:
+    build: .
+    container_name: afiya_whatsapp_bot
+    ports:
+      - "3000:3000"
+    environment:
+      - API_BASE_URL=http://backend:8000/api/v1
+      - NODE_ENV=production
+    volumes:
+      - whatsapp_session:./.wwebjs_auth
+    depends_on:
+      - backend
+    networks:
+      - afiya_network
+    restart: unless-stopped
+
+  # PostgreSQL
+  postgres:
+    image: postgres:15-alpine
+    container_name: afiya_postgres
+    environment:
+      POSTGRES_USER: afiya_user
+      POSTGRES_PASSWORD: afiya_pass
+      POSTGRES_DB: afiya_care
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - afiya_network
+
+  # Qdrant
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: afiya_qdrant
+    ports:
+      - "6333:6333"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    networks:
+      - afiya_network
+
+  # Redis
+  redis:
+    image: redis:7-alpine
+    container_name: afiya_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - afiya_network
+
+volumes:
+  postgres_data:
+  qdrant_data:
+  redis_data:
+  whatsapp_session:
+
+networks:
+  afiya_network:
+    driver: bridge

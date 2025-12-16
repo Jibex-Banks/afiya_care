@@ -72,3 +72,12 @@ logs/
 .tmp/
 .temp/
 *.bak
+
+
+# =========================
+# Node / Bots (your whatsapp bot)
+# =========================
+afiya-whatsapp-bot/node_modules/
+afiya-whatsapp-bot/.env
+afiya-whatsapp-bot/.wwebjs_cache/
+afiya-whatsapp-bot/.wwebjs_auth/
