@@ -36,7 +36,7 @@ class NATLaSService:
             self.tokenizer = AutoTokenizer.from_pretrained(
                 settings.NATLAS_MODEL,
                 trust_remote_code=True,
-                use_auth_token=token,
+                token=token,
                 use_fast=False
             )
 
@@ -49,7 +49,7 @@ class NATLaSService:
             config = AutoConfig.from_pretrained(
                 settings.NATLAS_MODEL,
                 trust_remote_code=True,
-                use_auth_token=token
+                token=token
             )
 
             # Patch rope_scaling for LLaMA3 compatibility
@@ -78,7 +78,7 @@ class NATLaSService:
                 quantization_config=quantization_config,
                 device_map="auto",
                 trust_remote_code=True,
-                use_auth_token=token,
+                token=token,
                 low_cpu_mem_usage=True,
                 torch_dtype=torch.float16
             )
@@ -100,7 +100,7 @@ class NATLaSService:
                 settings.NATLAS_MODEL,
                 device_map="auto",
                 trust_remote_code=True,
-                use_auth_token=token,
+                token=token,
                 low_cpu_mem_usage=True,
                 torch_dtype=torch.float16,
                 offload_folder="offload"
