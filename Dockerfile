@@ -1,5 +1,6 @@
 # Use a recent CUDA version (12.x recommended for latest torch/bitsandbytes)
-FROM nvidia/cuda:12.4.1-cudnn-runtime-ubuntu22.04  # Or 12.6 if available; runtime for inference (smaller than devel)
+ # Or 12.6 if available; runtime for inference (smaller than devel)
+FROM nvidia/cuda:12.4.1-cudnn-runtime-ubuntu22.04 
 
 # Install Python 3.11
 RUN apt-get update && apt-get install -y --no-install-recommends \
