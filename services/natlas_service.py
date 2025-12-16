@@ -1,16 +1,16 @@
 from transformers import (
-    AutoTokenizer, 
-    AutoModelForCausalLM, 
-    AutoConfig,  # Add this
+    AutoTokenizer,
+    AutoModelForCausalLM,
+    AutoConfig,
     BitsAndBytesConfig
 )
 import torch
-from typing import Dict, Optional
+from typing import Dict
 from core.config import settings
 
 class NATLaSService:
     """N-ATLaS Language Model Service with compatibility fixes"""
-    
+
     def __init__(self):
         self.model = None
         self.tokenizer = None
@@ -22,39 +22,46 @@ class NATLaSService:
             'ig': 'Igbo',
             'pcm': 'Nigerian Pidgin'
         }
-        
+
     async def initialize(self):
-        """Load N-ATLaS model with compatibility fixes"""
+        """Load N-ATLaS model safely with rope_scaling patch"""
         print(f"🇳🇬 Loading N-ATLaS: {settings.NATLAS_MODEL}")
         print(f"🔧 Device: {self.device}")
-        
+
+        token = settings.HUGGINGFACE_HUB_TOKEN
+
         try:
-            token = settings.HUGGINGFACE_HUB_TOKEN
-            # Load tokenizer first
+            # Load tokenizer
             print("📝 Loading tokenizer...")
             self.tokenizer = AutoTokenizer.from_pretrained(
                 settings.NATLAS_MODEL,
                 trust_remote_code=True,
                 use_auth_token=token,
-                use_fast=False  # Use slow tokenizer for compatibility
+                use_fast=False
             )
-            
-            # Set pad token if not exists
+
             if self.tokenizer.pad_token is None:
                 self.tokenizer.pad_token = self.tokenizer.eos_token
-            
             print("✅ Tokenizer loaded")
-            
-            # Load config first to check compatibility
+
+            # Load config and patch rope_scaling
             print("⚙️ Loading model config...")
             config = AutoConfig.from_pretrained(
                 settings.NATLAS_MODEL,
                 trust_remote_code=True,
-                use_auth_token=token,
+                use_auth_token=token
             )
+
+            # Patch rope_scaling for LLaMA3 compatibility
+            if hasattr(config, "rope_scaling") and isinstance(config.rope_scaling, dict):
+                config.rope_scaling = {
+                    "type": config.rope_scaling.get("type", "dynamic"),
+                    "factor": config.rope_scaling.get("factor", 8.0)
+                }
+
             print(f"✅ Config loaded: {config.model_type}")
-            
-            # Configure 4-bit quantization
+
+            # 4-bit quantization config
             print("💾 Configuring 4-bit quantization...")
             quantization_config = BitsAndBytesConfig(
                 load_in_4bit=True,
@@ -62,64 +69,58 @@ class NATLaSService:
                 bnb_4bit_quant_type="nf4",
                 bnb_4bit_use_double_quant=True,
             )
-            
-            # Load model with explicit config
+
+            # Load model
             print("🤖 Loading N-ATLaS model...")
             self.model = AutoModelForCausalLM.from_pretrained(
                 settings.NATLAS_MODEL,
-                use_auth_token=token,
-                config=config,  # Use pre-loaded config
+                config=config,
                 quantization_config=quantization_config,
                 device_map="auto",
                 trust_remote_code=True,
+                use_auth_token=token,
                 low_cpu_mem_usage=True,
                 torch_dtype=torch.float16
             )
-            
+
             print("✅ N-ATLaS loaded successfully!")
-            print(f"💾 Memory: ~4-5GB")
-            
+            print(f"💾 Approx. memory usage: 4-5GB")
+
         except Exception as e:
             print(f"❌ Error: {e}")
             print(f"🔍 Error type: {type(e).__name__}")
-            
-            # Fallback: Try without quantization
-            print("🔄 Attempting fallback loading...")
-            await self._load_fallback()
-    
-    async def _load_fallback(self):
+            print("🔄 Attempting fallback load without quantization...")
+            await self._load_fallback(token)
+
+    async def _load_fallback(self, token: str):
         """Fallback loading without quantization"""
         try:
-            token = settings.HUGGINGFACE_HUB_TOKEN
-            print("⚠️ Loading without quantization (will use more memory)...")
-            
+            print("⚠️ Loading without quantization (more memory)...")
             self.model = AutoModelForCausalLM.from_pretrained(
                 settings.NATLAS_MODEL,
-                use_auth_token=token,
                 device_map="auto",
                 trust_remote_code=True,
+                use_auth_token=token,
                 low_cpu_mem_usage=True,
                 torch_dtype=torch.float16,
-                offload_folder="offload"  # Offload to disk if needed
+                offload_folder="offload"
             )
-            
             print("✅ Fallback loading successful")
-            
         except Exception as e:
-            print(f"❌ Fallback also failed: {e}")
+            print(f"❌ Fallback failed: {e}")
             raise RuntimeError(f"Cannot load N-ATLaS: {e}")
-    
+
     async def analyze_symptoms(self, symptoms: str, language: str = "en") -> str:
         """Analyze symptoms"""
         if self.model is None or self.tokenizer is None:
             raise RuntimeError("N-ATLaS not initialized")
-        
+
         prompt = f"""As a medical assistant, analyze these symptoms:
 
 Symptoms: {symptoms}
 
 Provide a brief analysis."""
-        
+
         inputs = self.tokenizer(
             prompt,
             return_tensors="pt",
@@ -127,7 +128,7 @@ Provide a brief analysis."""
             max_length=512,
             padding=True
         ).to(self.device)
-        
+
         with torch.no_grad():
             outputs = self.model.generate(
                 **inputs,
@@ -138,14 +139,14 @@ Provide a brief analysis."""
                 pad_token_id=self.tokenizer.pad_token_id,
                 eos_token_id=self.tokenizer.eos_token_id
             )
-        
+
         response = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
         return response.replace(prompt, "").strip()
-    
+
     def detect_language(self, text: str) -> str:
         """Detect language"""
         text_lower = text.lower()
-        
+
         if any(m in text_lower for m in ['ẹ', 'ọ', 'ṣ', 'bawo']):
             return 'yo'
         if any(m in text_lower for m in ['sannu', 'yaya', 'ina']):
@@ -155,9 +156,9 @@ Provide a brief analysis."""
         if sum(1 for m in ['wetin', 'dey', 'fit'] if m in text_lower.split()) >= 2:
             return 'pcm'
         return 'en'
-    
+
     def get_model_info(self) -> Dict:
-        """Get model info"""
+        """Return model info"""
         return {
             "model_name": settings.NATLAS_MODEL,
             "device": self.device,
