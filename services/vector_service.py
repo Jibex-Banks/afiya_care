@@ -12,10 +12,10 @@ class VectorService:
         
     async def initialize(self):
         """Initialize Qdrant client and create collection"""
-        print(f"🔗 Connecting to Qdrant at {settings.QDRANT_HOST}:{settings.QDRANT_PORT}")
+        print(f"🔗 Connecting to Qdrant at {settings.QDRANT_URL}:{settings.QDRANT_PORT}")
         
         self.client = QdrantClient(
-            url=settings.QDRANT_HOST,
+            url=settings.QDRANT_URL,
             api_key=settings.QDRANT_API_KEY,
             timeout=30
         )

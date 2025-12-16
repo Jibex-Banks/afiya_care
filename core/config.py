@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     DB_MAX_OVERFLOW: int = 10
     
     # Vector Database
-    QDRANT_HOST: str
+    QDRANT_URL: str
     QDRANT_PORT: int = 6333
     QDRANT_API_KEY: str
     QDRANT_HTTPS: bool = True
