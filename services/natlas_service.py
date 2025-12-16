@@ -33,7 +33,7 @@ class NATLaSService:
             self.tokenizer = AutoTokenizer.from_pretrained(
                 settings.NATLAS_MODEL,
                 trust_remote_code=True,
-                token=settings.NATLAS_TOKEN,
+                token=settings.HUGGINGFACE_HUB_TOKEN,
                 use_auth_token=True
             )
             print("✅ Tokenizer loaded")
@@ -52,7 +52,7 @@ class NATLaSService:
             self.model = AutoModelForCausalLM.from_pretrained(
                 settings.NATLAS_MODEL,
                 quantization_config=quantization_config,
-                token=settings.NATLAS_TOKEN,
+                token=settings.HUGGINGFACE_HUB_TOKEN,
                 use_auth_token=True,
                 device_map="auto",                           # Auto device placement
                 trust_remote_code=True,

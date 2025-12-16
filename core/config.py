@@ -35,7 +35,7 @@ class Settings(BaseSettings):
     NATLAS_MAX_NEW_TOKENS: int = 256    # Reduced from 512
     NATLAS_TEMPERATURE: float = 0.7
     NATLAS_TOP_P: float = 0.9
-    NATLAS_TOKEN:str
+    HUGGINGFACE_HUB_TOKEN:str
     
     # 🆕 Quantization settings
     NATLAS_USE_4BIT: bool = True        # Enable 4-bit quantization
