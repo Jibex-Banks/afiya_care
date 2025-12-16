@@ -35,7 +35,7 @@ class NATLaSService:
             self.tokenizer = AutoTokenizer.from_pretrained(
                 settings.NATLAS_MODEL,
                 trust_remote_code=True,
-                use_auth_token=token
+                use_auth_token=token,
                 use_fast=False  # Use slow tokenizer for compatibility
             )
             
@@ -50,7 +50,7 @@ class NATLaSService:
             config = AutoConfig.from_pretrained(
                 settings.NATLAS_MODEL,
                 trust_remote_code=True,
-                use_auth_token=token
+                use_auth_token=token,
             )
             print(f"✅ Config loaded: {config.model_type}")
             
@@ -90,6 +90,7 @@ class NATLaSService:
     async def _load_fallback(self):
         """Fallback loading without quantization"""
         try:
+            token = settings.HUGGINGFACE_HUB_TOKEN
             print("⚠️ Loading without quantization (will use more memory)...")
             
             self.model = AutoModelForCausalLM.from_pretrained(
