@@ -15,8 +15,8 @@ class VectorService:
         print(f"🔗 Connecting to Qdrant at {settings.QDRANT_HOST}:{settings.QDRANT_PORT}")
         
         self.client = QdrantClient(
-            host=settings.QDRANT_HOST,
-            port=settings.QDRANT_PORT,
+            url=settings.QDRANT_HOST,
+            api_key=settings.QDRANT_API_KEY,
             timeout=30
         )
         
