@@ -1,20 +1,21 @@
-FROM python:3.11-slim
+# Use a recent CUDA version (12.x recommended for latest torch/bitsandbytes)
+FROM nvidia/cuda:12.4.1-cudnn-runtime-ubuntu22.04  # Or 12.6 if available; runtime for inference (smaller than devel)
+
+# Install Python 3.11
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3.11 python3.11-venv python3.11-dev python3-pip \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set Python 3.11 as default
+RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1 \
+    && update-alternatives --install /usr/bin/python python /usr/bin/python3.11 1
 
 WORKDIR /app
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    curl \
-    git \
-    && rm -rf /var/lib/apt/lists/*
-
-# Copy requirements first (for caching)
 COPY requirements.txt .
 
-# Install Python packages
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application
 COPY . /app
 
 # Create models directory
