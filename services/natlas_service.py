@@ -33,7 +33,8 @@ class NATLaSService:
             self.tokenizer = AutoTokenizer.from_pretrained(
                 settings.NATLAS_MODEL,
                 trust_remote_code=True,
-                token=settings.HUGGINGFACE_HUB_TOKEN
+                token=settings.HUGGINGFACE_HUB_TOKEN,
+                force_download=True
             )
             print("✅ Tokenizer loaded")
             
@@ -55,7 +56,8 @@ class NATLaSService:
                 device_map="auto",                           # Auto device placement
                 trust_remote_code=True,
                 low_cpu_mem_usage=True,                      # Optimize CPU memory
-                torch_dtype=torch.float16                    # Use float16
+                torch_dtype=torch.float16,                   # Use float16
+                force_download=True
             )
             
             print("✅ N-ATLaS model loaded successfully!")
