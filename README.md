@@ -12,6 +12,10 @@ license: mit
 
 Powered by N-ATLaS (NCAIR1/N-ATLaS)
 
+## 📹 Video Demo
+Watch a quick demo of the app in action:  
+[Watch Demo (Google Drive)] (https://drive.google.com/file/d/1hUC8fG0_ByURR1g7WP3kePurdZffRNJH/view?usp=drivesdk)  
+
 ## API Endpoints
 
 - `GET /` - Welcome message
