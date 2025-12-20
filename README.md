@@ -5,7 +5,6 @@ colorFrom: blue
 colorTo: green
 sdk: docker
 pinned: false
-license: mit
 ---
 
 # Afiya Care - AI Health Assistant
